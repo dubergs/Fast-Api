@@ -1,14 +1,27 @@
-from fastapi import FastAPI, Body, Path, Query
+from fastapi import FastAPI, Body, Path, Query, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 from pydantic import Field
+from user_jwt import createToken, validarToken
+from fastapi.security import HTTPBearer
 
 app = FastAPI(
     title='Aprendiendo FastAPI', 
     description='Una API en mis primeros pasos',
     version='0.0.1'
     )
+
+class User(BaseModel):
+    email: str
+    password: str
+
+class BearerJWT(HTTPBearer):
+    async def __call__(self, request: Request):
+        auth = await super().__call__(request)
+        data = validarToken(auth.credentials)
+        if data['email'] != 'duber@gmail.com':
+            raise HTTPException(status_code=403, detail='Token invalido❌!')
 
 class Movie(BaseModel):
     id: Optional[int] = None
@@ -18,9 +31,8 @@ class Movie(BaseModel):
     pais: str = Field(default='Pais de la pelicula')
     idioma: str = Field(default='Idioma de la pelicula')
     calificacion: float = Field(ge=1, le=10)
-    
-    
-    
+
+        
 movies = [
     {
         "id": 1,
@@ -33,6 +45,12 @@ movies = [
     }
 ]
 
+@app.post('/login', tags=['Login'])
+def login(user: User):
+    if user.email == 'duber@gmail.com' and user.password == '123':
+        token: str = createToken(user.dict())
+        print(f'Token: {token}')
+        return JSONResponse(content={'message': 'Usuario Autenticado✅!', 'token': token})
 
 @app.get('/', tags=['Inicio'])
 
@@ -40,7 +58,7 @@ def read_root():
     return HTMLResponse('<h2>Hola mundo!</h2>')
 
 
-@app.get('/movies', tags=['Peliculas'])
+@app.get('/movies', tags=['Peliculas'], dependencies=[Depends(BearerJWT())])
 def get_movies():
     return JSONResponse(content=movies)
 
