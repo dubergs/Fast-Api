@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Body
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Body, Path, Query
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional
+from pydantic import Field
 
 app = FastAPI(
     title='Aprendiendo FastAPI', 
@@ -11,12 +12,12 @@ app = FastAPI(
 
 class Movie(BaseModel):
     id: Optional[int] = None
-    titulo: str
-    año: int
-    genero: str
-    pais: str
-    idioma: str
-    calificacion: float
+    titulo: str = Field(default='Titulo de la pelicula', min_length=8, max_length=30)
+    año: int = Field(default=2023)
+    genero: str = Field(default='Genero de la pelicula')
+    pais: str = Field(default='Pais de la pelicula')
+    idioma: str = Field(default='Idioma de la pelicula')
+    calificacion: float = Field(ge=1, le=10)
     
     
     
@@ -41,11 +42,11 @@ def read_root():
 
 @app.get('/movies', tags=['Peliculas'])
 def get_movies():
-    return movies
+    return JSONResponse(content=movies)
 
 
 @app.get('/movies/{id}', tags=['Peliculas'])
-def get_movie(id: int):
+def get_movie(id: int = Path(ge=1, le=100)):
     for i in movies:
         if i["id"] == id:
             return i
@@ -53,18 +54,16 @@ def get_movie(id: int):
     
     
 @app.get('/movies/', tags=['Peliculas'])
-def get_movies_by_category(genero: str):
+def get_movies_by_category(genero: str = Query(min_length=4)):
     return genero
 
 
 @app.post('/movies', tags=['Peliculas'])
 def create_movie(movie: Movie):
-    movies.append(
-        movie
-    )
-    return movies
+    movies.append(movie)
+    print(movies)
+    return JSONResponse(content={'message': 'Pelicula creada con exito👌!', 'Pelicula': [movie.model_dump() for m in movies]})
 
-print(movies)
 
 @app.put('/movies/{id}', tags=['Peliculas'])
 def update_movie(id: int, movie: Movie):
@@ -76,11 +75,11 @@ def update_movie(id: int, movie: Movie):
              item['pais'] = movie.pais,
              item['idioma'] = movie.idioma,
              item['calificacion'] = movie.calificacion
-        return movies
+        return JSONResponse(content={'message': 'Pelicula actulizada con exito✅!', 'Pelicula': [movie.model_dump() for m in movies]})
     
 @app.delete('/movies/{id}', tags=['Peliculas'])
 def delete_movie(id: int):
     for item in movies:
         if item['id'] == id:
             movies.remove(item)
-            return movies
+            return JSONResponse(content={'message': 'Pelicula eliminada con exito✅!'})
