@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from user_jwt import createToken
 from fastapi.responses import JSONResponse
 
+#Instancia de APIRouter
 router_users = APIRouter()
 
 

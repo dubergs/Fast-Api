@@ -14,9 +14,12 @@ app = FastAPI(
     )
 
 
+#Rutas de la API
 app.include_router(routerMovie)
 app.include_router(router_users)
 
+
+#Creacion de la base de datos
 Base.metadata.create_all(bind=engine)
 
 
